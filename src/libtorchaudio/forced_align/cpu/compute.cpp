@@ -32,11 +32,10 @@ void forced_align_impl(
   // Replace backPtr tensor with two std::vector<bool>
   // allocate memory based on the expected needed size which is approximately
   // S * (T-L), we will use a safety margin of (T-L) to avoid reallocation
-  auto estSize = (S + 1) * (T - L);
-  std::vector<bool> backPtrBit0(estSize, false);
-  std::vector<bool> backPtrBit1(estSize, false);
-  std::vector<unsigned int> backPtr_offset(T - 1);
-  std::vector<unsigned int> backPtr_seek(T - 1);
+  std::vector<bool> backPtrBit0((S + 1) * (T - L), false);
+  std::vector<bool> backPtrBit1((S + 1) * (T - L), false);
+  unsigned int backPtr_offset[T - 1];
+  unsigned int backPtr_seek[T - 1];
   auto logProbs_a = logProbs.accessor<scalar_t, 3>();
   auto targets_a = targets.accessor<target_t, 2>();
   auto paths_a = paths.accessor<target_t, 2>();
@@ -85,13 +84,11 @@ void forced_align_impl(
     for (auto j = 0; j < S; ++j) {
       alphas_a[curIdxOffset][j] = -std::numeric_limits<scalar_t>::infinity();
     }
-    backPtr_seek.at(t - 1) = seek;
-    backPtr_offset.at(t - 1) = start;
+    backPtr_seek[t - 1] = seek;
+    backPtr_offset[t - 1] = start;
     if (start == 0) {
       alphas_a[curIdxOffset][0] =
           alphas_a[prevIdxOffset][0] + logProbs_a[batchIndex][t][blank];
-      // backPtrBit0.at(seek) = false;
-      // backPtrBit1.at(seek) = false;
       startloop += 1;
       seek += 1;
     }
@@ -114,16 +111,12 @@ void forced_align_impl(
       scalar_t result = 0.0;
       if (x2 > x1 && x2 > x0) {
         result = x2;
-        // backPtrBit0.at(seek + i) = false;
-        backPtrBit1.at(seek + i - startloop) = true;
+        backPtrBit1[seek + i - startloop] = true;
       } else if (x1 > x0 && x1 > x2) {
         result = x1;
-        backPtrBit0.at(seek + i - startloop) = true;
-        // backPtrBit1.at(seek + i) = false;
+        backPtrBit0[seek + i - startloop] = true;
       } else {
         result = x0;
-        // backPtrBit0.at(seek + i) = false;
-        // backPtrBit1.at(seek + i) = false;
       }
       alphas_a[curIdxOffset][i] = result + logProbs_a[batchIndex][t][labelIdx];
     }
