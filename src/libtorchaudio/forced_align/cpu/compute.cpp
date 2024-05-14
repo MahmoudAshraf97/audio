@@ -85,7 +85,8 @@ void forced_align_impl(
       alphas_a[curIdxOffset][j] = -std::numeric_limits<scalar_t>::infinity();
     }
     backPtr_seek.at(t - 1) = backPtrBit0.size();
-    unsigned int seek = backPtrBit0.size() backPtr_offset.at(t - 1) = start;
+    unsigned int seek = backPtrBit0.size();
+    backPtr_offset.at(t - 1) = start;
     if (start == 0) {
       alphas_a[curIdxOffset][0] =
           alphas_a[prevIdxOffset][0] + logProbs_a[batchIndex][t][blank];
