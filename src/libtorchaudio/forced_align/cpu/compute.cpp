@@ -32,7 +32,7 @@ void forced_align_impl(
   // Replace backPtr tensor with two std::vector<bool>
   // allocate memory based on the expected needed size which is approximately
   // 1 - L / T, we will use a safety margin of 0.02 to avoid reallocation
-  int estSize = static_cast(1.02 * (1 - L / T));
+  unsigned int estSize = static_cast<unsigned int>(1.02 * (1 - L / T));
   std::vector<bool> backPtrBit0(estSize);
   std::vector<bool> backPtrBit1(estSize);
   std::vector<unsigned int> backPtr_offset(T - 1);
