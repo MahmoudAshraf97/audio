@@ -33,8 +33,8 @@ void forced_align_impl(
   // allocate memory based on the expected needed size which is approximately
   // 1 - L / T, we will use a safety margin of 0.02 to avoid reallocation
   unsigned int estSize = static_cast<unsigned int>(1.02 * (1 - L / T));
-  std::vector<bool> backPtrBit0(estSize);
-  std::vector<bool> backPtrBit1(estSize);
+  std::vector<bool> backPtrBit0(estSize, false);
+  std::vector<bool> backPtrBit1(estSize, false);
   std::vector<unsigned int> backPtr_offset(T - 1);
   std::vector<unsigned int> backPtr_seek(T - 1);
   auto logProbs_a = logProbs.accessor<scalar_t, 3>();
@@ -61,6 +61,7 @@ void forced_align_impl(
     auto labelIdx = (i % 2 == 0) ? blank : targets_a[batchIndex][i / 2];
     alphas_a[0][i] = logProbs_a[batchIndex][0][labelIdx];
   }
+  unsigned int seek = 0;
   for (auto t = 1; t < T; t++) {
     if (T - t <= L + R) {
       if ((start % 2 == 1) &&
@@ -84,17 +85,16 @@ void forced_align_impl(
     for (auto j = 0; j < S; ++j) {
       alphas_a[curIdxOffset][j] = -std::numeric_limits<scalar_t>::infinity();
     }
-    backPtr_seek.at(t - 1) = backPtrBit0.size();
-    unsigned int seek = backPtrBit0.size();
+    backPtr_seek.at(t - 1) = seek;
     backPtr_offset.at(t - 1) = start;
     if (start == 0) {
       alphas_a[curIdxOffset][0] =
           alphas_a[prevIdxOffset][0] + logProbs_a[batchIndex][t][blank];
-      backPtrBit0.at(seek) = false;
-      backPtrBit1.at(seek) = false;
+      // backPtrBit0.at(seek) = false;
+      // backPtrBit1.at(seek) = false;
       startloop += 1;
     }
-
+    
     for (auto i = startloop; i < end; i++) {
       auto x0 = alphas_a[prevIdxOffset][i];
       auto x1 = alphas_a[prevIdxOffset][i - 1];
@@ -113,19 +113,20 @@ void forced_align_impl(
       scalar_t result = 0.0;
       if (x2 > x1 && x2 > x0) {
         result = x2;
-        backPtrBit0.at(seek + i) = false;
+        // backPtrBit0.at(seek + i) = false;
         backPtrBit1.at(seek + i) = true;
       } else if (x1 > x0 && x1 > x2) {
         result = x1;
         backPtrBit0.at(seek + i) = true;
-        backPtrBit1.at(seek + i) = false;
+        // backPtrBit1.at(seek + i) = false;
       } else {
         result = x0;
-        backPtrBit0.at(seek + i) = false;
-        backPtrBit1.at(seek + i) = false;
+        // backPtrBit0.at(seek + i) = false;
+        // backPtrBit1.at(seek + i) = false;
       }
       alphas_a[curIdxOffset][i] = result + logProbs_a[batchIndex][t][labelIdx];
     }
+    seek += (startloop - end)
   }
   auto idx1 = (T - 1) % 2;
   auto ltrIdx = alphas_a[idx1][S - 1] > alphas_a[idx1][S - 2] ? S - 1 : S - 2;
