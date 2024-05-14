@@ -28,11 +28,15 @@ void forced_align_impl(
                                  .device(logProbs.device())
                                  .dtype(logProbs.dtype()))
                              .fill_(kNegInfinity);
+
   // Replace backPtr tensor with two std::vector<bool>
-  std::vector<bool> backPtrBit0;
-  std::vector<bool> backPtrBit1;
-  std::vector<unsigned int> backPtr_offset;
-  std::vector<unsigned int> backPtr_seek;
+  // allocate memory based on the expected needed size which is approximately
+  // 1 - L / T, we will use a safety margin of 0.02 to avoid reallocation
+  int estSize = static_cast(1.02 * (1 - L / T));
+  std::vector<bool> backPtrBit0(estSize);
+  std::vector<bool> backPtrBit1(estSize);
+  std::vector<unsigned int> backPtr_offset(T - 1);
+  std::vector<unsigned int> backPtr_seek(T - 1);
   auto logProbs_a = logProbs.accessor<scalar_t, 3>();
   auto targets_a = targets.accessor<target_t, 2>();
   auto paths_a = paths.accessor<target_t, 2>();
@@ -80,13 +84,13 @@ void forced_align_impl(
     for (auto j = 0; j < S; ++j) {
       alphas_a[curIdxOffset][j] = -std::numeric_limits<scalar_t>::infinity();
     }
-    backPtr_seek.push_back(backPtrBit0.size());
-    backPtr_offset.push_back(start);
+    backPtr_seek.at(t - 1) = backPtrBit0.size();
+    unsigned int seek = backPtrBit0.size() backPtr_offset.at(t - 1) = start;
     if (start == 0) {
       alphas_a[curIdxOffset][0] =
           alphas_a[prevIdxOffset][0] + logProbs_a[batchIndex][t][blank];
-      backPtrBit0.push_back(false);
-      backPtrBit1.push_back(false);
+      backPtrBit0.at(seek) = false;
+      backPtrBit1.at(seek) = false;
       startloop += 1;
     }
 
@@ -108,16 +112,16 @@ void forced_align_impl(
       scalar_t result = 0.0;
       if (x2 > x1 && x2 > x0) {
         result = x2;
-        backPtrBit0.push_back(false);
-        backPtrBit1.push_back(true);
+        backPtrBit0.at(seek + i) = false;
+        backPtrBit1.at(seek + i) = true;
       } else if (x1 > x0 && x1 > x2) {
         result = x1;
-        backPtrBit0.push_back(true);
-        backPtrBit1.push_back(false);
+        backPtrBit0.at(seek + i) = true;
+        backPtrBit1.at(seek + i) = false;
       } else {
         result = x0;
-        backPtrBit0.push_back(false);
-        backPtrBit1.push_back(false);
+        backPtrBit0.at(seek + i) = false;
+        backPtrBit1.at(seek + i) = false;
       }
       alphas_a[curIdxOffset][i] = result + logProbs_a[batchIndex][t][labelIdx];
     }
