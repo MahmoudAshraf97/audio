@@ -126,7 +126,7 @@ void forced_align_impl(
       }
       alphas_a[curIdxOffset][i] = result + logProbs_a[batchIndex][t][labelIdx];
     }
-    seek += (startloop - end)
+    seek += (startloop - end);
   }
   auto idx1 = (T - 1) % 2;
   auto ltrIdx = alphas_a[idx1][S - 1] > alphas_a[idx1][S - 2] ? S - 1 : S - 2;
