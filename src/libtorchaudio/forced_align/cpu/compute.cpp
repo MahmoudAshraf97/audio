@@ -94,7 +94,7 @@ void forced_align_impl(
       // backPtrBit1.at(seek) = false;
       startloop += 1;
     }
-    
+
     for (auto i = startloop; i < end; i++) {
       auto x0 = alphas_a[prevIdxOffset][i];
       auto x1 = alphas_a[prevIdxOffset][i - 1];
@@ -114,10 +114,10 @@ void forced_align_impl(
       if (x2 > x1 && x2 > x0) {
         result = x2;
         // backPtrBit0.at(seek + i) = false;
-        backPtrBit1.at(seek + i) = true;
+        backPtrBit1.at(seek + i - startloop) = true;
       } else if (x1 > x0 && x1 > x2) {
         result = x1;
-        backPtrBit0.at(seek + i) = true;
+        backPtrBit0.at(seek + i - startloop) = true;
         // backPtrBit1.at(seek + i) = false;
       } else {
         result = x0;
